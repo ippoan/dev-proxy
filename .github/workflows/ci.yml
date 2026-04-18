@@ -29,6 +29,37 @@ jobs:
       - name: Validate projects.json.example
         run: node scripts/validate-projects.mjs projects.json.example
 
+      - name: Validate registry.json schema
+        run: |
+          node -e "
+            const fs = require('node:fs');
+            const reg = JSON.parse(fs.readFileSync('registry.json', 'utf8'));
+            if (!Array.isArray(reg.frontends)) { throw new Error('registry.frontends missing'); }
+            const ports = new Map();
+            const names = new Set();
+            for (const f of reg.frontends) {
+              if (!/^[a-z0-9][a-z0-9_-]*\$/.test(f.name)) throw new Error('bad name: ' + f.name);
+              if (!Number.isInteger(f.port) || f.port < 1024 || f.port > 65535) throw new Error('bad port: ' + f.name);
+              if (ports.has(f.port)) throw new Error('port conflict: ' + ports.get(f.port) + ' vs ' + f.name);
+              if (names.has(f.name)) throw new Error('duplicate name: ' + f.name);
+              ports.set(f.port, f.name);
+              names.add(f.name);
+            }
+            console.log('✓ registry.json (' + reg.frontends.length + ' entries)');
+          "
+
+      - name: Verify validate-frontend.mjs parses
+        run: node --check scripts/validate-frontend.mjs
+
+      - name: Verify sync.mjs parses
+        run: node --check scripts/sync.mjs
+
+      - name: Verify create-access-app.mjs parses
+        run: node --check scripts/create-access-app.mjs
+
+      - name: Verify verify-access-app.mjs parses
+        run: node --check scripts/verify-access-app.mjs
+
       - name: ShellCheck
         run: |
           sudo apt-get update -qq

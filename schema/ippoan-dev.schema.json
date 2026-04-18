@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": ".ippoan-dev.yaml",
+  "description": "Frontend metadata for dev-proxy. Commit to the repo root.",
+  "type": "object",
+  "required": ["name", "port"],
+  "properties": {
+    "name":   { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$", "description": "Must match the GitHub repo name." },
+    "port":   { "type": "integer", "minimum": 1024, "maximum": 65535 },
+    "subdir": { "type": "string", "description": "Sub-directory under the repo where npm run dev is invoked (e.g. web for monorepos)." },
+    "cmd":    { "type": "string", "description": "Dev command template. Default: 'PORT=$PORT HOST=0.0.0.0 npm run dev'." }
+  },
+  "additionalProperties": false
+}
