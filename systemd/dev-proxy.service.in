@@ -1,0 +1,13 @@
+[Unit]
+Description=Dev subdomain reverse proxy (Caddy)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=@CADDY_BIN@ run --config @DEV_PROXY_ROOT@/Caddyfile --adapter caddyfile
+WorkingDirectory=@DEV_PROXY_ROOT@
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

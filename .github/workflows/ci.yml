@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install caddy (for validate)
+        run: |
+          curl -sSL "https://caddyserver.com/api/download?os=linux&arch=amd64" -o /tmp/caddy
+          chmod +x /tmp/caddy
+
+      - name: Validate Caddyfile syntax
+        run: |
+          mkdir -p projects
+          echo '# placeholder' > projects/_placeholder.caddy
+          /tmp/caddy validate --config Caddyfile --adapter caddyfile
+
+      - name: Validate projects.json.example
+        run: node scripts/validate-projects.mjs projects.json.example
+
+      - name: ShellCheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y shellcheck
+          shellcheck *.sh scripts/*.sh
+
+      - name: Verify trigger-agent.mjs parses
+        run: node --check trigger-agent.mjs

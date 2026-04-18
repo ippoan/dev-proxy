@@ -1,0 +1,7 @@
+{
+  "example-nuxt": {
+    "dir": "/home/yhonda/js/example-nuxt",
+    "port": 3099,
+    "cmd": "PORT=$PORT HOST=0.0.0.0 npm run dev"
+  }
+}
