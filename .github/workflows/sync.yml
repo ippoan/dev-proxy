@@ -1,13 +1,13 @@
 name: sync registry
 
 # Aggregate .ippoan-dev.yaml across all ippoan org repos and open a PR if
-# registry.json changed. Runs on schedule + on manual dispatch.
-# Frontend repos can trigger this immediately after their merge by calling
-# the "repository_dispatch" event with type=registry-sync.
+# registry.json changed. No cron — runs only on explicit trigger:
+#   - manual: `gh workflow run sync.yml`
+#   - frontend merge → repository_dispatch type=registry-sync
+# (Cron was removed because the registry changes slowly and a failing
+#  scheduled run just adds noise.)
 
 on:
-  schedule:
-    - cron: '*/15 * * * *'
   workflow_dispatch:
   repository_dispatch:
     types: [registry-sync]
