@@ -10,13 +10,16 @@
 
 - `Caddyfile` — :3000 bind、`projects/*.caddy` を import
 - `projects/<name>.caddy` — `trigger-agent` が `projects.json` から自動生成
-- `projects.json` — プロジェクト定義 (`dir` / `port` / `cmd`)。Phase 3 で各 frontend の `.ippoan-dev.yaml` から自動生成される。gitignore
+- `projects.json` — 各 host の実データ (`dir` / `port` / `cmd`)。gitignore
+- `registry.json` — **source of truth**: name / port / repo / subdir の登録簿 (手動 PR 管理)
 - `trigger-agent.mjs` — port 3099 の on-demand 起動 agent
 - `waiting.html` — 「起動中」待機画面
 - `up.sh` / `down.sh` / `up-all.sh` / `down-all.sh` / `status.sh`
 - `systemd/*.service.in` — systemd unit テンプレート
 - `scripts/install.sh` — unit のレンダリング + enable
 - `scripts/validate-projects.mjs` — `projects.json` schema validate
+- `scripts/validate-frontend.mjs` — frontend の `.ippoan-dev.yaml` を registry と照合 (CI 用)
+- `scripts/create-access-app.mjs` / `verify-access-app.mjs` — Cloudflare Access wildcard app の作成・検証
 
 ## セットアップ
 
@@ -52,16 +55,22 @@ curl -H "Host: example-nuxt-dev.ippoan.org" http://127.0.0.1:3000/
 - `IDLE_KILL_MS` (ms, default 900000) で閾値変更
 - `REAPER_INTERVAL_MS` (default 60000) で確認間隔変更
 
-## プロジェクト追加
+## 新 frontend 追加手順
 
-現状（Phase 1）:
-1. `projects.json` にエントリ追加
-2. Cloudflare Dashboard で Tunnel Public Hostname 追加
-3. `./up.sh <name>` でテスト
+1. この repo に PR で `registry.json` に entry を追加（port を予約）:
+   ```json
+   { "name": "my-app", "port": 3050, "repo": "ippoan/my-app", "subdir": "" }
+   ```
+2. 対象 frontend repo に `.ippoan-dev.yaml` を追加（registry entry と一致必須）:
+   ```yaml
+   name: my-app
+   port: 3050
+   cmd: "PORT=$PORT HOST=0.0.0.0 npm run dev"
+   ```
+3. 以降の frontend PR は `ci / Dev Proxy Validate` で registry との一致が検証される
+4. host 側: `projects.json` に `dir/port/cmd` を手動追加 + Cloudflare Tunnel Public Hostname を追加 → `./up.sh <name>`
 
-Phase 3 完了後:
-1. 対象 frontend repo に `.ippoan-dev.yaml` を追加
-2. PR merge → dev-proxy `sync.yml` が `projects.json` / CF tunnel / auth-worker `ALLOWED_REDIRECT_ORIGINS` を自動更新
+yaml と registry が食い違ったまま merge されることは CI がブロックする。
 
 ## トラブル
 
