@@ -51,9 +51,6 @@ jobs:
       - name: Verify validate-frontend.mjs parses
         run: node --check scripts/validate-frontend.mjs
 
-      - name: Verify sync.mjs parses
-        run: node --check scripts/sync.mjs
-
       - name: Verify create-access-app.mjs parses
         run: node --check scripts/create-access-app.mjs
 
