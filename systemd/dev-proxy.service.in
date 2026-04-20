@@ -1,13 +1,15 @@
 [Unit]
-Description=Dev subdomain reverse proxy (Caddy)
-After=network.target
+Description=Dev subdomain reverse proxy (Caddy via Docker Compose)
+After=network.target docker.service
 
 [Service]
-Type=simple
-ExecStart=@CADDY_BIN@ run --config @DEV_PROXY_ROOT@/Caddyfile --adapter caddyfile
+Type=oneshot
+RemainAfterExit=yes
 WorkingDirectory=@DEV_PROXY_ROOT@
-Restart=on-failure
-RestartSec=3
+# コンテナ自体は docker の restart: unless-stopped が保つので systemd は
+# 起動/停止のキックだけ担う (Type=oneshot + RemainAfterExit=yes)
+ExecStart=@DOCKER_BIN@ compose up -d caddy
+ExecStop=@DOCKER_BIN@ compose down
 
 [Install]
 WantedBy=default.target

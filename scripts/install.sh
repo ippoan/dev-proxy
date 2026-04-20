@@ -17,11 +17,15 @@ set -a
 set +a
 
 : "${DEV_PROXY_ROOT:?DEV_PROXY_ROOT missing}"
-: "${CADDY_BIN:?CADDY_BIN missing}"
+: "${DOCKER_BIN:=/usr/bin/docker}"
 : "${NODE_BIN:?NODE_BIN missing}"
 
-if [ ! -x "$CADDY_BIN" ]; then
-	echo "error: CADDY_BIN=$CADDY_BIN not executable" >&2
+if [ ! -x "$DOCKER_BIN" ]; then
+	echo "error: DOCKER_BIN=$DOCKER_BIN not executable" >&2
+	exit 1
+fi
+if ! "$DOCKER_BIN" compose version >/dev/null 2>&1; then
+	echo "error: '$DOCKER_BIN compose' plugin not available" >&2
 	exit 1
 fi
 if [ ! -x "$NODE_BIN" ]; then
@@ -36,7 +40,7 @@ render() {
 	local src="$1" dest="$2"
 	sed \
 		-e "s|@DEV_PROXY_ROOT@|$DEV_PROXY_ROOT|g" \
-		-e "s|@CADDY_BIN@|$CADDY_BIN|g" \
+		-e "s|@DOCKER_BIN@|$DOCKER_BIN|g" \
 		-e "s|@NODE_BIN@|$NODE_BIN|g" \
 		"$src" > "$dest"
 	echo "rendered: $dest"
