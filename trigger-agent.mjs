@@ -176,6 +176,16 @@ function accessLogMtime(name) {
   }
 }
 
+function pidfileMtime(name) {
+  const pidfile = path.join(PIDS_DIR, `${name}.pid`)
+  if (!existsSync(pidfile)) return null
+  try {
+    return statSync(pidfile).mtimeMs
+  } catch {
+    return null
+  }
+}
+
 function killProject(name) {
   console.log(`[reaper] killing idle project: ${name}`)
   const child = spawn(DOWN_SH, [name], {
@@ -199,17 +209,15 @@ async function reapIdle() {
     // port 使用中か確認 (dev 起動中)
     const listening = await isPortListening(info.port)
     if (!listening) continue
-    // access log mtime を確認
+    // lastTouch = max(アクセスログ mtime, pidfile mtime)
+    // 両方見る理由:
+    //   - 起動直後は access log が古いままなので pidfile mtime を見ないと誤殺される
+    //   - アクセスがあれば access log mtime が更新されるので生きてると判定できる
     const lastAccess = accessLogMtime(name)
-    // ログファイル無し or 未更新 → 代替として pidfile mtime を使う
-    let lastTouch = lastAccess
-    if (lastTouch == null) {
-      const pidfile = path.join(PIDS_DIR, `${name}.pid`)
-      if (existsSync(pidfile)) {
-        try { lastTouch = statSync(pidfile).mtimeMs } catch {}
-      }
-    }
-    if (lastTouch == null) continue
+    const lastPid = pidfileMtime(name)
+    const candidates = [lastAccess, lastPid].filter(v => v != null)
+    if (candidates.length === 0) continue
+    const lastTouch = Math.max(...candidates)
     const idleMs = now - lastTouch
     if (idleMs > IDLE_KILL_MS) {
       console.log(`[reaper] ${name} idle ${Math.round(idleMs / 60000)} min > ${Math.round(IDLE_KILL_MS / 60000)} min → stop`)

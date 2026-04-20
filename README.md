@@ -15,7 +15,8 @@
 - `trigger-agent.mjs` — port 3099 の on-demand 起動 agent
 - `waiting.html` — 「起動中」待機画面
 - `up.sh` / `down.sh` / `up-all.sh` / `down-all.sh` / `status.sh`
-- `systemd/*.service.in` — systemd unit テンプレート
+- `docker-compose.yml` — caddy をコンテナとして起動（`restart: unless-stopped`）
+- `systemd/*.service.in` — systemd unit テンプレート (caddy は docker compose を叩くだけ)
 - `scripts/install.sh` — unit のレンダリング + enable
 - `scripts/validate-projects.mjs` — `projects.json` schema validate
 - `scripts/validate-frontend.mjs` — frontend の `.ippoan-dev.yaml` を registry と照合 (CI 用)
@@ -24,15 +25,15 @@
 ## セットアップ
 
 ```bash
-# Caddy と Node.js を先にインストール
-# https://caddyserver.com/docs/install
+# Docker (compose plugin 含む) と Node.js を先にインストール
+# https://docs.docker.com/engine/install/
 # node >= 20
 
 # 1. 設定
 cp .env.example .env
-# DEV_PROXY_ROOT / CADDY_BIN / NODE_BIN / PROJECTS_ROOT を埋める
+# DEV_PROXY_ROOT / DOCKER_BIN / NODE_BIN / PROJECTS_ROOT を埋める
 
-# 2. systemd unit 生成と有効化
+# 2. systemd unit 生成と有効化 (caddy は docker 経由で起動)
 bash scripts/install.sh
 
 # 3. projects.json を用意（Phase 3 完了後は自動同期）
@@ -50,10 +51,12 @@ curl -H "Host: example-nuxt-dev.ippoan.org" http://127.0.0.1:3000/
 
 ## アイドル自動停止
 
-`trigger-agent.mjs` が 1 分おきに `logs/access-<name>.log` mtime をチェック、閾値以上未更新なら `down.sh`。
+`trigger-agent.mjs` が 1 分おきに `max(logs/access-<name>.log mtime, .pids/<name>.pid mtime)` をチェック、閾値以上未更新なら `down.sh`。
 
 - `IDLE_KILL_MS` (ms, default 900000) で閾値変更
 - `REAPER_INTERVAL_MS` (default 60000) で確認間隔変更
+
+pidfile mtime も参照する理由: 起動直後は access log が古いまま (前回終了時点のまま) なので、そちらだけを見ていると freshly started dev server が即殺される。
 
 ## 新 frontend 追加手順
 

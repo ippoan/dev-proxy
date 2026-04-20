@@ -1,0 +1,24 @@
+# Docker 版 caddy。systemd native 版 (dev-proxy.service) を置き換える。
+#
+# DEV_PROXY_ROOT を .env で定義し、`docker compose up -d caddy` で起動する。
+# ホストの 3011-3023 や 3099 (trigger-agent) にそのままアクセスできるよう
+# network_mode: host を採用している (ブリッジだと各 dev server が見えない)。
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: dev-proxy-caddy
+    restart: unless-stopped
+    network_mode: host
+    # Caddyfile 内の log output が ${DEV_PROXY_ROOT}/logs/... と絶対パス
+    # 指定されているため、同一パスでマウントして整合を取る。
+    volumes:
+      - ${DEV_PROXY_ROOT}:${DEV_PROXY_ROOT}:rw
+      - dev_proxy_caddy_data:/data
+      - dev_proxy_caddy_config:/config
+    working_dir: ${DEV_PROXY_ROOT}
+    command: caddy run --config ${DEV_PROXY_ROOT}/Caddyfile --adapter caddyfile
+    mem_limit: 256m
+
+volumes:
+  dev_proxy_caddy_data:
+  dev_proxy_caddy_config:
