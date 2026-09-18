@@ -83,6 +83,13 @@
       "port": 3023,
       "repo": "ippoan/ndlocrlite-web",
       "subdir": ""
+    },
+    {
+      "name": "nuxt-vehicle-maintenance",
+      "port": 3024,
+      "repo": "ippoan/nuxt-vehicle-maintenance",
+      "subdir": "",
+      "cmd": "PORT=$PORT HOST=0.0.0.0 npm run dev"
     }
   ]
 }
